@@ -1,66 +1,39 @@
-import ReactMarkdown from 'react-markdown'
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { atomDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
-import clsx from 'clsx'
-import { ReactNode } from 'react'
+import { useState } from 'react'
 
-type MessageProps = {
-  message: {
-    role: 'user' | 'assistant'
-    content: string
-  }
-}
+type ChatInputProps = {
+  onSendMessage: (content: string) => Promise<void>;
+  disabled: boolean;
+};
 
-const ChatMessage = ({ message }: MessageProps) => {
-  const isUser = message.role === 'user'
+
+const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled }) => {
+  const [input, setInput] = useState('');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSendMessage(input);
+    setInput('');
+  };
 
   return (
-    <div className={clsx('flex w-full', isUser ? 'justify-end' : 'justify-start')}>
-      <div
-        className={clsx(
-          'max-w-[80%] rounded-lg p-4',
-          isUser ? 'bg-blue-500 text-white' : 'bg-white shadow-md'
-        )}
+    <form onSubmit={handleSubmit} className="flex gap-2">
+      <input
+        type="text"
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        disabled={disabled}
+        className="flex-1 border rounded px-3 py-2"
+        placeholder="Type a message..."
+      />
+      <button
+        type="submit"
+        disabled={disabled || !input.trim()}
+        className="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50"
       >
-        <ReactMarkdown
-          className="prose prose-sm max-w-none"
-          components={{
-            code({
-              node,
-              inline,
-              className,
-              children,
-              ...props
-            }: {
-              node: any
-              inline?: boolean
-              className?: string
-              children: ReactNode
-            }) {
-              const match = /language-(\w+)/.exec(className || '')
+        Send
+      </button>
+    </form>
+  );
+};
 
-              return !inline && match ? (
-                <SyntaxHighlighter
-                  style={atomDark}
-                  language={match[1]}
-                  PreTag="div"
-                  {...(props as any)} // 👈 force-cast props
-                >
-                  {String(children).replace(/\n$/, '')}
-                </SyntaxHighlighter>
-              ) : (
-                <code className={className} {...props}>
-                  {children}
-                </code>
-              )
-            }
-          }}
-        >
-          {message.content}
-        </ReactMarkdown>
-      </div>
-    </div>
-  )
-}
-
-export default ChatMessage
+export default ChatInput;
