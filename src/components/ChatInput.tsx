@@ -1,55 +1,66 @@
-import { useState, KeyboardEvent } from 'react'
+import ReactMarkdown from 'react-markdown'
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+import { atomDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import clsx from 'clsx'
+import { ReactNode } from 'react'
 
-type ChatInputProps = {
-  onSendMessage: (message: string) => void
-  disabled?: boolean
+type MessageProps = {
+  message: {
+    role: 'user' | 'assistant'
+    content: string
+  }
 }
 
-const ChatInput = ({ onSendMessage, disabled = false }: ChatInputProps) => {
-  const [message, setMessage] = useState('')
-
-  const handleSubmit = () => {
-    if (message.trim() && !disabled) {
-      onSendMessage(message)
-      setMessage('')
-    }
-  }
-
-  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSubmit()
-    }
-  }
+const ChatMessage = ({ message }: MessageProps) => {
+  const isUser = message.role === 'user'
 
   return (
-    <div className="flex items-end gap-4 bg-white p-4 rounded-lg shadow-md">
-      <textarea
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder="Type your message..."
+    <div className={clsx('flex w-full', isUser ? 'justify-end' : 'justify-start')}>
+      <div
         className={clsx(
-          'flex-1 resize-none rounded-md border border-gray-300 p-2 focus:border-blue-500 focus:outline-none',
-          'min-h-[80px] max-h-[200px]'
-        )}
-        disabled={disabled}
-      />
-      <button
-        onClick={handleSubmit}
-        disabled={disabled || !message.trim()}
-        className={clsx(
-          'rounded-md px-4 py-2 font-medium text-white',
-          disabled || !message.trim()
-            ? 'bg-gray-300 cursor-not-allowed'
-            : 'bg-blue-500 hover:bg-blue-600'
+          'max-w-[80%] rounded-lg p-4',
+          isUser ? 'bg-blue-500 text-white' : 'bg-white shadow-md'
         )}
       >
-        Send
-      </button>
+        <ReactMarkdown
+          className="prose prose-sm max-w-none"
+          components={{
+            code({
+              node,
+              inline,
+              className,
+              children,
+              ...props
+            }: {
+              node: any
+              inline?: boolean
+              className?: string
+              children: ReactNode
+            }) {
+              const match = /language-(\w+)/.exec(className || '')
+
+              return !inline && match ? (
+                <SyntaxHighlighter
+                  style={atomDark}
+                  language={match[1]}
+                  PreTag="div"
+                  {...(props as any)} // 👈 force-cast props
+                >
+                  {String(children).replace(/\n$/, '')}
+                </SyntaxHighlighter>
+              ) : (
+                <code className={className} {...props}>
+                  {children}
+                </code>
+              )
+            }
+          }}
+        >
+          {message.content}
+        </ReactMarkdown>
+      </div>
     </div>
   )
 }
 
-export default ChatInput 
+export default ChatMessage
